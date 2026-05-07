@@ -9,6 +9,7 @@ import json
 # Configuración de alcance para acceso a APIs de Google
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
+@st.cache_resource
 def conectar_sheets():
     """
     Gestiona la conexión a Google Sheets.
@@ -32,12 +33,6 @@ st.set_page_config(page_title="Salud Gaby", page_icon="🐱", layout="wide")
 col1, col2, col3 = st.columns([6, 1, 1])
 with col1:
     st.title("Registro de dolor Gaby ahumada")
-with col2:
-    st.title("🤕")
-with col3:
-    ruta_imagen = os.path.join(os.path.dirname(__file__), "gatito.png")
-    if os.path.exists(ruta_imagen):
-        st.image(ruta_imagen, width=50)
 
 # División de la interfaz en pestañas operativas
 tab_registro, tab_graficos = st.tabs(["Añadir Registro", "Dashboard de Análisis"])
