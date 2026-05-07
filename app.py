@@ -4,18 +4,25 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 import os
 import pandas as pd
+import json
 
 # Configuración de alcance para acceso a APIs de Google
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 
-@st.cache_resource
 def conectar_sheets():
     """
-    Inicializa la conexión a Google Sheets.
-    Requiere que el archivo credenciales.json se encuentre en el mismo directorio.
+    Gestiona la conexión a Google Sheets.
+    En la nube lee los secretos de Streamlit; en local lee el archivo físico.
     """
-    ruta_credenciales = os.path.join(os.path.dirname(__file__), "credenciales.json")
-    credenciales = Credentials.from_service_account_file(ruta_credenciales, scopes=SCOPES)
+    if "GCP_CREDENTIALS" in st.secrets:
+        # Modo Producción (Nube)
+        creds_dict = json.loads(st.secrets["GCP_CREDENTIALS"])
+        credenciales = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+    else:
+        # Modo Desarrollo (Local)
+        ruta_credenciales = os.path.join(os.path.dirname(__file__), "credenciales.json")
+        credenciales = Credentials.from_service_account_file(ruta_credenciales, scopes=SCOPES)
+        
     cliente = gspread.authorize(credenciales)
     return cliente.open("Registros_Salud").sheet1
 
