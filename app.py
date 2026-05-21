@@ -224,7 +224,7 @@ with tab_gestionar:
             if st.button("Eliminar Registro Seleccionado"):
                 fila_a_borrar = mapa_opciones[seleccion]
                 hoja = conectar_sheets()
-                hoja.delete_row(fila_a_borrar)
+                hoja.delete_rows(fila_a_borrar)
                 obtener_registros.clear() # Limpia caché para reflejar el borrado
                 st.success(f"Registro eliminado correctamente. La tabla se ha actualizado.")
                 st.rerun() # Recarga la app para que desaparezca de la lista
