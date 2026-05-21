@@ -53,7 +53,15 @@ except Exception:
 def obtener_unicos(columna, default_list):
     """Extrae valores únicos de la base de datos para autocompletar listas en el futuro."""
     if not df_historico.empty and columna in df_historico.columns:
-        unicos = df_historico[columna].dropna().astype(str).str.strip().unique()
+        valores = df_historico[columna].dropna().astype(str).str.strip()
+        if columna == "Sospecha":
+            todas = []
+            for val in valores:
+                todas.extend([s.strip() for s in val.split(',')])
+            unicos = list(set(todas))
+        else:
+            unicos = valores.unique()
+            
         for u in unicos:
             if u and u.lower() != 'nan' and u not in default_list and u.lower() != 'otro':
                 default_list.append(u)
@@ -70,8 +78,6 @@ with tab_registro:
         st.session_state.form_key = 0
         
     fk = st.session_state.form_key
-
-    fecha = st.date_input("Fecha", datetime.now(), key=f"fecha_{fk}")
     
     tipo_dolor = st.selectbox("Tipo de Dolor", tipos_dolor_opciones + ["Otro"], key=f"tipo_{fk}")
     if tipo_dolor == "Otro":
@@ -79,6 +85,17 @@ with tab_registro:
     else:
         tipo_dolor_final = tipo_dolor
         
+    # Fecha con restricción al pasado y botón de Hoy
+    col_fecha1, col_fecha2 = st.columns([3, 1])
+    with col_fecha1:
+        fecha = st.date_input("Fecha", datetime.now(), max_value=datetime.now(), key=f"fecha_{fk}")
+    with col_fecha2:
+        st.write("")
+        st.write("")
+        if st.button("Fijar en Hoy", key=f"btn_hoy_{fk}"):
+            st.session_state[f"fecha_{fk}"] = datetime.now().date()
+            st.rerun()
+            
     # Dependencia dinámica para la ubicación
     if tipo_dolor_final in ["Cabeza", "Estomacal", "Mandibula"]:
         if tipo_dolor_final == "Cabeza":
@@ -88,28 +105,32 @@ with tab_registro:
         elif tipo_dolor_final == "Mandibula":
             ubicacion_ops = ["Localizado", "Cara general"]
             
-        ubicacion = st.selectbox("Ubicación específica", ubicacion_ops + ["Otro"], key=f"ubi_{fk}")
+        ubicacion = st.selectbox("Detalle dolor", ubicacion_ops + ["Otro"], key=f"ubi_{fk}")
         if ubicacion == "Otro":
-            ubicacion_final = st.text_input("Especificar Ubicación", key=f"ubi_otro_{fk}")
+            ubicacion_final = st.text_input("Especificar Detalle", key=f"ubi_otro_{fk}")
         else:
             ubicacion_final = ubicacion
     else:
-        ubicacion_final = st.text_input("Ubicación específica", key=f"ubi_libre_{fk}")
+        ubicacion_final = st.text_input("Detalle dolor", key=f"ubi_libre_{fk}")
         
     escala = st.slider("Escala de intensidad", 1, 10, 5, key=f"escala_{fk}")
-    comentario = st.text_area("Comentario / Notas", key=f"coment_{fk}")
     
-    sospecha = st.selectbox("Sospecha (¿Qué lo gatilló?)", sospechas_opciones + ["Otro"], key=f"sosp_{fk}")
-    if sospecha == "Otro":
-        sospecha_final = st.text_input("Especificar Sospecha", key=f"sosp_otro_{fk}")
-    else:
-        sospecha_final = sospecha
+    # Sospecha ahora permite múltiples selecciones
+    sospechas_seleccionadas = st.multiselect("Sospecha (¿Qué lo gatilló? Puedes elegir varias)", sospechas_opciones + ["Otro"], key=f"sosp_{fk}")
+    sospechas_finales = [s for s in sospechas_seleccionadas if s != "Otro"]
+    if "Otro" in sospechas_seleccionadas:
+        sospecha_otra = st.text_input("Especificar otra(s) sospecha(s)", key=f"sosp_otro_{fk}")
+        if sospecha_otra:
+            sospechas_finales.append(sospecha_otra)
+    sospecha_final = ", ".join(sospechas_finales)
         
     medicamento = st.selectbox("Medicamento tomado", medicamento_opciones + ["Otro"], key=f"med_{fk}")
     if medicamento == "Otro":
         medicamento_final = st.text_input("Especificar Medicamento", key=f"med_otro_{fk}")
     else:
         medicamento_final = medicamento
+        
+    comentario = st.text_area("Comentario / Notas", key=f"coment_{fk}")
 
     if st.button("Guardar en mi Bitácora"):
         try:
