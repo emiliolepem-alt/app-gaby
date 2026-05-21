@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import pandas as pd
 import json
+import time
 
 # Configuración de alcance para acceso a APIs de Google
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
@@ -64,13 +65,17 @@ sospechas_opciones = obtener_unicos("Sospecha", ["Deshidratación", "Luz", "Estr
 medicamento_opciones = obtener_unicos("Medicamento", ["Ninguno", "Aspirina"])
 
 with tab_registro:
-    # Eliminamos st.form porque los campos que dependen de selecciones (ej. Ubicación)
-    # no se actualizan dinámicamente hasta que envías el formulario. 
-    fecha = st.date_input("Fecha", datetime.now())
+    # Creamos una variable de estado para reiniciar los campos
+    if 'form_key' not in st.session_state:
+        st.session_state.form_key = 0
+        
+    fk = st.session_state.form_key
+
+    fecha = st.date_input("Fecha", datetime.now(), key=f"fecha_{fk}")
     
-    tipo_dolor = st.selectbox("Tipo de Dolor", tipos_dolor_opciones + ["Otro"])
+    tipo_dolor = st.selectbox("Tipo de Dolor", tipos_dolor_opciones + ["Otro"], key=f"tipo_{fk}")
     if tipo_dolor == "Otro":
-        tipo_dolor_final = st.text_input("Especificar Tipo de Dolor")
+        tipo_dolor_final = st.text_input("Especificar Tipo de Dolor", key=f"tipo_otro_{fk}")
     else:
         tipo_dolor_final = tipo_dolor
         
@@ -83,26 +88,26 @@ with tab_registro:
         elif tipo_dolor_final == "Mandibula":
             ubicacion_ops = ["Localizado", "Cara general"]
             
-        ubicacion = st.selectbox("Ubicación específica", ubicacion_ops + ["Otro"])
+        ubicacion = st.selectbox("Ubicación específica", ubicacion_ops + ["Otro"], key=f"ubi_{fk}")
         if ubicacion == "Otro":
-            ubicacion_final = st.text_input("Especificar Ubicación")
+            ubicacion_final = st.text_input("Especificar Ubicación", key=f"ubi_otro_{fk}")
         else:
             ubicacion_final = ubicacion
     else:
-        ubicacion_final = st.text_input("Ubicación específica")
+        ubicacion_final = st.text_input("Ubicación específica", key=f"ubi_libre_{fk}")
         
-    escala = st.slider("Escala de intensidad", 1, 10, 5)
-    comentario = st.text_area("Comentario / Notas")
+    escala = st.slider("Escala de intensidad", 1, 10, 5, key=f"escala_{fk}")
+    comentario = st.text_area("Comentario / Notas", key=f"coment_{fk}")
     
-    sospecha = st.selectbox("Sospecha (¿Qué lo gatilló?)", sospechas_opciones + ["Otro"])
+    sospecha = st.selectbox("Sospecha (¿Qué lo gatilló?)", sospechas_opciones + ["Otro"], key=f"sosp_{fk}")
     if sospecha == "Otro":
-        sospecha_final = st.text_input("Especificar Sospecha")
+        sospecha_final = st.text_input("Especificar Sospecha", key=f"sosp_otro_{fk}")
     else:
         sospecha_final = sospecha
         
-    medicamento = st.selectbox("Medicamento tomado", medicamento_opciones + ["Otro"])
+    medicamento = st.selectbox("Medicamento tomado", medicamento_opciones + ["Otro"], key=f"med_{fk}")
     if medicamento == "Otro":
-        medicamento_final = st.text_input("Especificar Medicamento")
+        medicamento_final = st.text_input("Especificar Medicamento", key=f"med_otro_{fk}")
     else:
         medicamento_final = medicamento
 
@@ -121,6 +126,10 @@ with tab_registro:
             hoja.append_row(datos)
             st.success("Registro ingresado a la base de datos.")
             obtener_registros.clear() # Limpia la caché para actualizar los gráficos y listas futuras
+            # Al sumar 1 y reiniciar, vacía todos los campos automáticamente
+            st.session_state.form_key += 1
+            time.sleep(1.5) # Pausa para que alcances a leer el mensaje de éxito
+            st.rerun()
         except Exception as e:
             st.error(f"Fallo de escritura en base de datos: {e}")
 
