@@ -35,7 +35,7 @@ with col1:
     st.title("Registro de dolor Gaby ahumada")
 
 # División de la interfaz en pestañas operativas
-tab_registro, tab_graficos = st.tabs(["Añadir Registro", "Dashboard de Análisis"])
+tab_registro, tab_graficos, tab_gestionar = st.tabs(["Añadir Registro", "Dashboard de Análisis", "Gestionar Registros"])
 
 @st.cache_data(show_spinner=False)
 def obtener_registros():
@@ -200,3 +200,35 @@ with tab_graficos:
             st.info("No existen registros en la hoja de cálculo.")
     except Exception as e:
         st.error(f"Fallo de lectura en base de datos: {e}")
+
+with tab_gestionar:
+    st.header("Eliminar un Registro")
+    try:
+        registros_gestion = obtener_registros()
+        if registros_gestion:
+            df_gestion = pd.DataFrame(registros_gestion)
+            
+            opciones_borrado = []
+            for idx, row in df_gestion.iterrows():
+                # La fila 1 en Sheets son los encabezados, por lo que los datos empiezan en la fila 2
+                fila_sheet = idx + 2
+                fecha_reg = row.get('Fecha', 'Sin fecha')
+                tipo_reg = row.get('Tipo de Dolor', 'Desconocido')
+                escala_reg = row.get('Escala', '-')
+                texto_opcion = f"Fila {fila_sheet}: {fecha_reg} | {tipo_reg} | Intensidad: {escala_reg}"
+                opciones_borrado.append((fila_sheet, texto_opcion))
+            
+            mapa_opciones = {texto: fila for fila, texto in opciones_borrado}
+            seleccion = st.selectbox("Selecciona el registro que deseas eliminar:", list(mapa_opciones.keys()))
+            
+            if st.button("Eliminar Registro Seleccionado"):
+                fila_a_borrar = mapa_opciones[seleccion]
+                hoja = conectar_sheets()
+                hoja.delete_row(fila_a_borrar)
+                obtener_registros.clear() # Limpia caché para reflejar el borrado
+                st.success(f"Registro eliminado correctamente. La tabla se ha actualizado.")
+                st.rerun() # Recarga la app para que desaparezca de la lista
+        else:
+            st.info("No hay registros disponibles para eliminar.")
+    except Exception as e:
+        st.error(f"Error al cargar o eliminar el registro: {e}")
