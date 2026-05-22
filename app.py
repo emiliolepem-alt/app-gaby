@@ -86,15 +86,16 @@ with tab_registro:
         tipo_dolor_final = tipo_dolor
         
     # Fecha con restricción al pasado y botón de Hoy
+    def fijar_hoy(llave_widget):
+        st.session_state[llave_widget] = datetime.now().date()
+        
     col_fecha1, col_fecha2 = st.columns([3, 1])
     with col_fecha1:
         fecha = st.date_input("Fecha", datetime.now(), max_value=datetime.now(), key=f"fecha_{fk}")
     with col_fecha2:
         st.write("")
         st.write("")
-        if st.button("Fijar en Hoy", key=f"btn_hoy_{fk}"):
-            st.session_state[f"fecha_{fk}"] = datetime.now().date()
-            st.rerun()
+        st.button("Fijar en Hoy", key=f"btn_hoy_{fk}", on_click=fijar_hoy, args=(f"fecha_{fk}",))
             
     # Dependencia dinámica para la ubicación
     if tipo_dolor_final in ["Cabeza", "Estomacal", "Mandibula"]:
